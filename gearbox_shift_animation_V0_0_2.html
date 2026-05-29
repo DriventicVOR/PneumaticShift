@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PneumaticShift V0_0_2 — Shift Animator</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#ffffff;--bg2:#f5f5f4;--bg3:#eeede8;
+  --text:#1a1a18;--text2:#5f5e5a;--text3:#9e9c96;
+  --border:rgba(0,0,0,0.10);--border2:rgba(0,0,0,0.20);
+  --info-bg:#e6f1fb;--info-bd:#85b7eb;--info-tx:#0c447c;
+  --success-bg:#eaf3de;--success-bd:#97c459;--success-tx:#27500a;
+  --warn-bg:#faeeda;--warn-bd:#ef9f27;--warn-tx:#633806;
+  --danger-bg:#fcebeb;--danger-bd:#f09595;--danger-tx:#791f1f;
+  --rad:8px;--rad-lg:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2b;
+  --text:#e8e6df;--text2:#a8a69e;--text3:#6e6d67;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.16);
+  --info-bg:#042c53;--info-bd:#185fa5;--info-tx:#85b7eb;
+  --success-bg:#173404;--success-bd:#3b6d11;--success-tx:#97c459;
+  --warn-bg:#412402;--warn-bd:#854f0b;--warn-tx:#fac775;
+  --danger-bg:#501313;--danger-bd:#a32d2d;--danger-tx:#f09595;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding:24px 16px;max-width:740px;margin:0 auto;font-size:14px;line-height:1.5;}
+h1{font-size:18px;font-weight:500;margin-bottom:3px;}
+.subtitle{font-size:12px;color:var(--text2);margin-bottom:20px;}
+button{background:transparent;border:0.5px solid var(--border2);border-radius:var(--rad);color:var(--text);cursor:pointer;font-family:inherit;font-size:13px;transition:background .15s;}
+button:hover{background:var(--bg2);}
+button:active{transform:scale(0.97);}
+button:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.ctrl-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.lbl{font-size:12px;color:var(--text2);white-space:nowrap;}
+.gear-btn{width:40px;height:36px;font-weight:500;}
+.gear-btn.rev{width:44px;}
+.gear-btn.active{background:var(--info-bg);border-color:var(--info-bd);color:var(--info-tx);}
+.ud-row{display:flex;gap:8px;margin-bottom:10px;}
+.ud-btn{height:36px;padding:0 16px;font-size:13px;display:inline-flex;align-items:center;gap:6px;}
+.shift-label{font-size:12px;color:var(--text2);min-height:18px;margin-bottom:6px;}
+.phase-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-height:22px;margin-bottom:12px;}
+.ph-pip{width:9px;height:9px;border-radius:50%;background:var(--border2);transition:background .2s;flex-shrink:0;}
+.ph-pip.done{background:var(--success-tx);}
+.ph-pip.active{background:var(--info-tx);}
+.ph-desc{font-size:11px;color:var(--text2);}
+.h-wrap{display:flex;justify-content:center;margin-bottom:14px;}
+#h-svg{display:block;width:100%;max-width:420px;}
+.state-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;}
+.row-lbl{font-size:11px;color:var(--text3);width:58px;flex-shrink:0;padding-top:7px;}
+.boxes{display:flex;gap:5px;flex:1;}
+.vbox,.cbox{flex:1;border-radius:var(--rad);border:0.5px solid var(--border);padding:5px 3px;text-align:center;background:var(--bg2);transition:background .3s,border-color .3s;min-width:0;}
+.vbox.energised{background:var(--info-bg);border-color:var(--info-bd);}
+.vbox.changing{background:var(--warn-bg);border-color:var(--warn-bd);}
+.cbox.extended{background:var(--success-bg);border-color:var(--success-bd);}
+.cbox.moving{background:var(--warn-bg);border-color:var(--warn-bd);}
+.cbox.disengaged{background:var(--danger-bg);border-color:var(--danger-bd);}
+.bname{font-size:11px;font-weight:500;color:var(--text2);}
+.bstate{font-size:10px;color:var(--text3);margin-top:1px;}
+.vbox.energised .bname,.vbox.energised .bstate{color:var(--info-tx);}
+.vbox.changing  .bname,.vbox.changing  .bstate{color:var(--warn-tx);}
+.cbox.extended  .bname,.cbox.extended  .bstate{color:var(--success-tx);}
+.cbox.moving    .bname,.cbox.moving    .bstate{color:var(--warn-tx);}
+.cbox.disengaged .bname,.cbox.disengaged .bstate{color:var(--danger-tx);}
+.section-divider{border:none;border-top:0.5px solid var(--border);margin:12px 0;}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text2);margin-top:10px;}
+.ld{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:3px;vertical-align:middle;}
+footer{margin-top:20px;font-size:11px;color:var(--text3);border-top:0.5px solid var(--border);padding-top:12px;}
+</style>
+</head>
+<body>
+
+<h1>PneumaticShift — shift animator</h1>
+<p class="subtitle">V0_0_2 &nbsp;·&nbsp; 6x 5/2 valves &nbsp;·&nbsp; 3-position gate + reverse &nbsp;·&nbsp; clutch control &nbsp;·&nbsp; H-pattern sequencing</p>
+
+<div class="ctrl-row">
+  <span class="lbl">From:</span>
+  <div id="from-btns" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+  <span class="lbl" style="margin-left:4px;">To:</span>
+  <div id="to-btns" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+  <button id="play-btn" onclick="playShift()" style="padding:0 14px;height:36px;display:inline-flex;align-items:center;gap:6px;">
+    <i class="ti ti-player-play" aria-hidden="true"></i> Play
+  </button>
+</div>
+
+<div class="ud-row">
+  <button class="ud-btn" id="btn-up"   onclick="doUp()">  <i class="ti ti-arrow-up"    aria-hidden="true"></i> Upshift</button>
+  <button class="ud-btn" id="btn-down" onclick="doDown()"><i class="ti ti-arrow-down"  aria-hidden="true"></i> Downshift</button>
+  <button class="ud-btn" id="btn-neu"  onclick="doNeu()"> <i class="ti ti-circle"      aria-hidden="true"></i> Neutral</button>
+</div>
+
+<div class="shift-label" id="shift-label">Select from and to gear, or use upshift / downshift</div>
+<div class="phase-bar"   id="phase-bar"></div>
+
+<div class="h-wrap">
+  <svg id="h-svg" viewBox="0 0 420 115" role="img" aria-label="H-pattern gear diagram with reverse gate">
+    <line x1="28"  y1="60" x2="390" y2="60" stroke="var(--border2)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="60"  y1="24" x2="60"  y2="96" stroke="var(--border2)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="160" y1="24" x2="160" y2="96" stroke="var(--border2)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="260" y1="24" x2="260" y2="96" stroke="var(--border2)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="360" y1="24" x2="360" y2="96" stroke="var(--border2)" stroke-width="2" stroke-linecap="round"/>
+    <text x="60"  y="15" text-anchor="middle" style="font-size:10px;fill:var(--text3);font-family:inherit">Rev</text>
+    <text x="160" y="15" text-anchor="middle" style="font-size:10px;fill:var(--text3);font-family:inherit">1–2</text>
+    <text x="260" y="15" text-anchor="middle" style="font-size:10px;fill:var(--text3);font-family:inherit">3–4</text>
+    <text x="360" y="15" text-anchor="middle" style="font-size:10px;fill:var(--text3);font-family:inherit">5–6</text>
+    <text x="20"  y="28" text-anchor="end"    style="font-size:10px;fill:var(--text3);font-family:inherit">fwd</text>
+    <text x="20"  y="96" text-anchor="end"    style="font-size:10px;fill:var(--text3);font-family:inherit">back</text>
+    <text x="60"  y="28"  text-anchor="middle" style="font-size:11px;fill:var(--text2);font-family:inherit">R</text>
+    <text x="160" y="28"  text-anchor="middle" style="font-size:11px;fill:var(--text2);font-family:inherit">1</text>
+    <text x="160" y="98"  text-anchor="middle" style="font-size:11px;fill:var(--text2);font-family:inherit">2</text>
+    <text x="260" y="28"  text-anchor="middle" style="font-size:11px;fill:var(--text2);font-family:inherit">3</text>
+    <text x="260" y="98"  text-anchor="middle" style="font-size:11px;fill:var(--text2);font-family:inherit">4</text>
+    <text x="360" y="28"  text-anchor="middle" style="font-size:11px;fill:var(--text2);font-family:inherit">5</text>
+    <text x="360" y="98"  text-anchor="middle" style="font-size:11px;fill:var(--text2);font-family:inherit">6</text>
+    <text x="267" y="65"  text-anchor="middle" style="font-size:10px;fill:var(--text3);font-family:inherit">N</text>
+    <circle id="lev" cx="260" cy="60" r="12"
+      style="fill:var(--info-bg);stroke:var(--info-bd);stroke-width:1.5;transition:cx .5s cubic-bezier(.4,0,.2,1),cy .5s cubic-bezier(.4,0,.2,1)"/>
+    <text id="lev-lbl" x="260" y="64" text-anchor="middle"
+      style="font-size:10px;font-weight:600;fill:var(--info-tx);pointer-events:none;font-family:inherit;transition:x .5s,y .5s">N</text>
+  </svg>
+</div>
+
+<!-- Clutch -->
+<div class="state-row">
+  <span class="row-lbl">Clutch</span>
+  <div class="boxes">
+    <div class="cbox" id="cbC1" style="max-width:72px;"><div class="bname">C1</div><div class="bstate" id="csC1">retracted</div></div>
+    <div style="flex:1;font-size:11px;color:var(--text3);padding-top:8px;padding-left:8px;" id="clutch-note">clutch engaged — drive connected</div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- Gate valves -->
+<div class="state-row">
+  <span class="row-lbl">Gate valves</span>
+  <div class="boxes">
+    <div class="vbox" id="vbA1"><div class="bname">A1</div><div class="bstate" id="vsA1">de-energ.</div></div>
+    <div class="vbox" id="vbA2"><div class="bname">A2</div><div class="bstate" id="vsA2">de-energ.</div></div>
+    <div class="vbox" id="vbA3"><div class="bname">A3</div><div class="bstate" id="vsA3">de-energ.</div></div>
+  </div>
+</div>
+<div class="state-row">
+  <span class="row-lbl">Gate cyls.</span>
+  <div class="boxes">
+    <div class="cbox extended" id="cbA1"><div class="bname">A1</div><div class="bstate" id="csA1">extended</div></div>
+    <div class="cbox"          id="cbA2"><div class="bname">A2</div><div class="bstate" id="csA2">retracted</div></div>
+    <div class="cbox"          id="cbA3"><div class="bname">A3</div><div class="bstate" id="csA3">retracted</div></div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- Engage valves -->
+<div class="state-row">
+  <span class="row-lbl">Engage valves</span>
+  <div class="boxes">
+    <div class="vbox" id="vbB1"><div class="bname">B1</div><div class="bstate" id="vsB1">de-energ.</div></div>
+    <div class="vbox" id="vbB2"><div class="bname">B2</div><div class="bstate" id="vsB2">de-energ.</div></div>
+  </div>
+</div>
+<div class="state-row">
+  <span class="row-lbl">Engage cyls.</span>
+  <div class="boxes">
+    <div class="cbox extended" id="cbB1"><div class="bname">B1</div><div class="bstate" id="csB1">extended</div></div>
+    <div class="cbox"          id="cbB2"><div class="bname">B2</div><div class="bstate" id="csB2">retracted</div></div>
+  </div>
+</div>
+
+<div class="legend">
+  <span><span class="ld" style="background:var(--warn-bg);border:0.5px solid var(--warn-bd);"></span>changing / moving</span>
+  <span><span class="ld" style="background:var(--info-bg);border:0.5px solid var(--info-bd);"></span>valve energised</span>
+  <span><span class="ld" style="background:var(--success-bg);border:0.5px solid var(--success-bd);"></span>cylinder extended</span>
+  <span><span class="ld" style="background:var(--danger-bg);border:0.5px solid var(--danger-bd);"></span>clutch disengaged</span>
+  <span><span class="ld" style="background:var(--bg2);border:0.5px solid var(--border2);"></span>de-energised / retracted</span>
+</div>
+
+<hr class="section-divider">
+<p style="font-size:11px;color:var(--text3);">
+  Normal states (no power): A1 extended &middot; A2 retracted &middot; A3 retracted &middot;
+  B1 extended &middot; B2 retracted &middot; C1 retracted (clutch engaged).<br>
+  Power-off safe state: 3&ndash;4 gate, neutral engage, clutch engaged.
+  &nbsp;&nbsp;Reverse only reachable from neutral.
+</p>
+
+<footer>PneumaticShift V0_0_2 &nbsp;&middot;&nbsp; DriventicVOR &nbsp;&middot;&nbsp; <a href="https://github.com/DriventicVOR/PneumaticShift" style="color:var(--info-tx);">github.com/DriventicVOR/PneumaticShift</a></footer>
+
+<script>
+const GEARS=['N','R','1','2','3','4','5','6'];
+
+const VS={
+  N:   {A1:0,A2:0,A3:0,B1:0,B2:0},
+  R:   {A1:0,A2:1,A3:1,B1:0,B2:1},
+  1:   {A1:0,A2:1,A3:0,B1:0,B2:1},
+  2:   {A1:0,A2:1,A3:0,B1:1,B2:0},
+  3:   {A1:0,A2:0,A3:0,B1:0,B2:1},
+  4:   {A1:0,A2:0,A3:0,B1:1,B2:0},
+  5:   {A1:1,A2:0,A3:0,B1:0,B2:1},
+  6:   {A1:1,A2:0,A3:0,B1:1,B2:0},
+  NR:  {A1:0,A2:1,A3:1,B1:0,B2:0},
+  N12: {A1:0,A2:1,A3:0,B1:0,B2:0},
+  N34: {A1:0,A2:0,A3:0,B1:0,B2:0},
+  N56: {A1:1,A2:0,A3:0,B1:0,B2:0},
+};
+
+const GPOS={
+  N:{cx:260,cy:60}, R:{cx:60,cy:27},
+  1:{cx:160,cy:27}, 2:{cx:160,cy:93},
+  3:{cx:260,cy:27}, 4:{cx:260,cy:93},
+  5:{cx:360,cy:27}, 6:{cx:360,cy:93},
+  NR:{cx:60,cy:60}, N12:{cx:160,cy:60},
+  N34:{cx:260,cy:60}, N56:{cx:360,cy:60},
+};
+
+function sLbl(s){return s.startsWith('N')?'N':s;}
+
+function interFor(g){
+  if(g==='R') return 'NR';
+  if(g==='1'||g==='2') return 'N12';
+  if(g==='N'||g==='3'||g==='4') return 'N34';
+  return 'N56';
+}
+
+function isNeutralEngage(s){const v=VS[s];return v&&v.B1===0&&v.B2===0;}
+function sameGate(a,b){return interFor(a)===interFor(b);}
+
+function buildSequence(from,to){
+  if(from===to) return [];
+  const fi=interFor(from), ti=interFor(to);
+  const sg=sameGate(from,to);
+  const fn=isNeutralEngage(from), tn=isNeutralEngage(to);
+  const horiz=(!sg)&&fn&&tn;
+  const phases=[];
+  if(horiz){phases.push({s:to,label:'horizontal gate swap — already at neutral engage'});return phases;}
+  if(sg){phases.push({s:to,label:'swap engage — B valves move together'});return phases;}
+  if(!fn) phases.push({s:fi,label:'disengage — B returns to neutral'});
+  if(fi!==ti) phases.push({s:ti,label:'gate change — A cylinders slide'});
+  if(!tn) phases.push({s:to,label:'engage — B cylinders to target'});
+  else    phases.push({s:to,label:'arrive at neutral engage'});
+  return phases;
+}
+
+const SHIFT_UP  ={N:'1',R:null,1:'2',2:'3',3:'4',4:'5',5:'6',6:null};
+const SHIFT_DOWN={N:null,R:'N',1:'N',2:'1',3:'2',4:'3',5:'4',6:'5'};
+
+let fromGear='N',toGear=null,animRunning=false;
+
+function makeBtn(g,cid,fn){
+  const b=document.createElement('button');
+  b.className='gear-btn'+(g==='R'?' rev':'');
+  b.id=cid+'-'+g;b.textContent=g;b.onclick=()=>fn(g);
+  document.getElementById(cid).appendChild(b);
+}
+
+GEARS.forEach(g=>{
+  makeBtn(g,'from-btns',g2=>{
+    if(animRunning)return;
+    fromGear=g2;toGear=null;
+    document.querySelectorAll('#from-btns .gear-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('from-btns-'+g2).classList.add('active');
+    document.querySelectorAll('#to-btns .gear-btn').forEach(b=>b.classList.remove('active'));
+    applyState(g2);
+    document.getElementById('shift-label').textContent='Select target gear';
+    buildPips([]);
+  });
+  makeBtn(g,'to-btns',g2=>{
+    if(animRunning||g2===fromGear)return;
+    toGear=g2;
+    document.querySelectorAll('#to-btns .gear-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('to-btns-'+g2).classList.add('active');
+    const seq=buildSequence(fromGear,toGear);
+    document.getElementById('shift-label').textContent=
+      fromGear+' \u2192 '+toGear+': '+seq.length+' phase'+(seq.length!==1?'s':'');
+    buildPips(seq);
+  });
+});
+
+document.getElementById('from-btns-N').classList.add('active');
+applyState('N');
+
+function buildPips(seq){
+  const bar=document.getElementById('phase-bar');bar.innerHTML='';
+  seq.forEach((ph,i)=>{
+    if(i>0){const a=document.createElement('span');a.className='ph-desc';a.textContent='\u2192';bar.appendChild(a);}
+    const pip=document.createElement('div');pip.className='ph-pip';pip.id='pip-'+i;bar.appendChild(pip);
+    const lbl=document.createElement('span');lbl.className='ph-desc';lbl.textContent=ph.label;bar.appendChild(lbl);
+  });
+}
+
+function cylExt(name,vOn){
+  if(name==='A1'||name==='B1') return !vOn;
+  return !!vOn;
+}
+
+function applyState(key){
+  const st=VS[key];if(!st)return;
+  const pos=GPOS[key]||GPOS.N34;
+  const lev=document.getElementById('lev'),ll=document.getElementById('lev-lbl');
+  lev.setAttribute('cx',pos.cx);lev.setAttribute('cy',pos.cy);
+  ll.setAttribute('x',pos.cx);ll.setAttribute('y',pos.cy+4);ll.textContent=sLbl(key);
+  ['A1','A2','A3','B1','B2'].forEach(n=>{
+    const vOn=st[n],ext=cylExt(n,vOn);
+    const vb=document.getElementById('vb'+n),vs=document.getElementById('vs'+n);
+    const cb=document.getElementById('cb'+n),cs=document.getElementById('cs'+n);
+    if(vb){vb.className='vbox'+(vOn?' energised':'');vs.textContent=vOn?'energised':'de-energ.';}
+    if(cb){cb.className='cbox'+(ext?' extended':'');cs.textContent=ext?'extended':'retracted';}
+  });
+  setClutch('engaged');
+}
+
+function setClutch(state){
+  const cb=document.getElementById('cbC1'),cs=document.getElementById('csC1');
+  const note=document.getElementById('clutch-note');
+  if(state==='changing'){
+    cb.className='cbox moving';cs.textContent='moving\u2026';note.textContent='clutch changing state\u2026';
+  }else if(state==='disengaged'){
+    cb.className='cbox disengaged';cs.textContent='extended';note.textContent='clutch disengaged \u2014 drive disconnected';
+  }else{
+    cb.className='cbox';cs.textContent='retracted';note.textContent='clutch engaged \u2014 drive connected';
+  }
+}
+
+function applyTransient(prevKey,nextKey){
+  const prev=VS[prevKey],next=VS[nextKey];
+  ['A1','A2','A3','B1','B2'].forEach(n=>{
+    if(prev[n]!==next[n]){
+      const vb=document.getElementById('vb'+n),vs=document.getElementById('vs'+n);
+      const cb=document.getElementById('cb'+n),cs=document.getElementById('cs'+n);
+      if(vb){vb.className='vbox changing';vs.textContent='changing\u2026';}
+      if(cb){cb.className='cbox moving';cs.textContent='moving\u2026';}
+    }
+  });
+  const pos=GPOS[nextKey]||GPOS.N34;
+  const lev=document.getElementById('lev'),ll=document.getElementById('lev-lbl');
+  lev.setAttribute('cx',pos.cx);lev.setAttribute('cy',pos.cy);
+  ll.setAttribute('x',pos.cx);ll.setAttribute('y',pos.cy+4);ll.textContent=sLbl(nextKey);
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function lockBtns(lock){
+  ['play-btn','btn-up','btn-down','btn-neu'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.disabled=lock;
+  });
+}
+
+async function runSequence(from,to){
+  const seq=buildSequence(from,to);
+  if(!seq.length)return from;
+  buildPips(seq);
+  applyState(from);
+  await sleep(200);
+  let prev=from;
+  for(let i=0;i<seq.length;i++){
+    document.querySelectorAll('.ph-pip').forEach((p,j)=>{
+      p.className='ph-pip'+(j<i?' done':j===i?' active':'');
+    });
+    setClutch('changing');await sleep(300);
+    setClutch('disengaged');await sleep(200);
+    applyTransient(prev,seq[i].s);
+    await sleep(500);
+    applyState(seq[i].s);
+    setClutch('disengaged');await sleep(300);
+    setClutch('changing');await sleep(300);
+    setClutch('engaged');await sleep(200);
+    document.getElementById('pip-'+i).className='ph-pip done';
+    prev=seq[i].s;
+  }
+  return to;
+}
+
+async function playShift(){
+  if(animRunning||!toGear)return;
+  animRunning=true;lockBtns(true);
+  const arrived=await runSequence(fromGear,toGear);
+  fromGear=arrived;toGear=null;
+  document.querySelectorAll('#from-btns .gear-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('from-btns-'+fromGear).classList.add('active');
+  document.querySelectorAll('#to-btns .gear-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('shift-label').textContent='Arrived at '+fromGear+'. Select next gear.';
+  animRunning=false;lockBtns(false);
+}
+
+async function doUp(){
+  if(animRunning)return;
+  const next=SHIFT_UP[fromGear];
+  if(!next){document.getElementById('shift-label').textContent='Already at top gear.';return;}
+  toGear=next;
+  document.querySelectorAll('#to-btns .gear-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('to-btns-'+next).classList.add('active');
+  await playShift();
+}
+
+async function doDown(){
+  if(animRunning)return;
+  const next=SHIFT_DOWN[fromGear];
+  if(!next){document.getElementById('shift-label').textContent='Already at bottom gear.';return;}
+  toGear=next;
+  document.querySelectorAll('#to-btns .gear-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('to-btns-'+next).classList.add('active');
+  await playShift();
+}
+
+async function doNeu(){
+  if(animRunning||fromGear==='N')return;
+  toGear='N';
+  document.querySelectorAll('#to-btns .gear-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('to-btns-N').classList.add('active');
+  await playShift();
+}
+</script>
+</body>
+</html>
